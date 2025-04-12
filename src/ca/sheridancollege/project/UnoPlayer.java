@@ -11,42 +11,74 @@ import java.util.ArrayList;
  * @author Komal
  */
 public class UnoPlayer extends Player {
+
+    private int currentIndex;
+    private ArrayList<UnoPlayer> allPlayers;
     protected ArrayList<UnoCard> hand = new ArrayList<>();
 
     public UnoPlayer(String name) {
         super(name);
     }
 
-    /**
-     * Plays a card at the given index if valid.
-     * @param index the index of the card to play
-     */
-    public void playCard(int index) {
-        if (isValidCardIndex(index)) {
-            UnoCard playedCard = hand.remove(index);
-            System.out.println(getName() + " played: " + playedCard);
-        } else {
-            System.out.println("Invalid move!");
-        }
+    public void setGameContext(int currentIndex, ArrayList<UnoPlayer> allPlayers) {
+        this.currentIndex = currentIndex;
+        this.allPlayers = allPlayers;
     }
 
-    /**
-     * Validate card index range.
-     */
-    private boolean isValidCardIndex(int index) {
-        return index >= 0 && index < hand.size();
+    public void addCardToHand(UnoCard card) {
+        hand.add(card);
     }
 
-    /**
-     * Basic play behavior: plays the first card if available.
-     */
+    public ArrayList<UnoCard> getHand() {
+        return hand;
+    }
+
+    public boolean hasWon() {
+        return hand.isEmpty();
+    }
+
     @Override
     public void play() {
-        if (!hand.isEmpty()) {
-            playCard(0); // Can later be replaced with more strategic selection.
-        } else {
-            System.out.println(getName() + " has no cards left!");
+        UnoGameManager manager = UnoGameManagerHolder.getInstance();
+        UnoCard topCard = manager.getTopCard();
+
+        for (int i = 0; i < hand.size(); i++) {
+            UnoCard card = hand.get(i);
+            if (manager.isCardPlayable(card)) {
+                hand.remove(i);
+                System.out.println(getName() + " played: " + card);
+                manager.setTopCard(card);
+
+                checkUNO(manager);
+                return;
+            }
+        }
+        UnoCard drawn = manager.drawCard();
+        if (drawn == null) {
+            System.out.println(getName() + " tried to draw a card, but the deck is empty.");
+            return;
+        }
+        addCardToHand(drawn);
+        System.out.println(getName() + " drew: " + drawn);
+        if (manager.isCardPlayable(drawn)) {
+            hand.remove(hand.size() - 1);
+            System.out.println(getName() + " played drawn card: " + drawn);
+            manager.setTopCard(drawn);
+            checkUNO(manager);
         }
     }
-    
+    private void checkUNO(UnoGameManager manager) {
+    if (hand.size() == 1) {
+        boolean saidUNO = Math.random() < 0.8;
+        if (saidUNO) {
+            System.out.println(getName() + " says UNO!");
+        } else {
+            System.out.println(getName() + " forgot to say UNO! Draw 2 penalty cards.");
+            hand.add(manager.drawCard());
+            hand.add(manager.drawCard());
+        }
+    }
+}
+
+
 }

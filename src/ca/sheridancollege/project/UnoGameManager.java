@@ -16,13 +16,14 @@ import java.util.List;
  * @author Komal
  */
 public class UnoGameManager {
+
     private UnoDeck deck;
     private UnoCard topCard;
     private boolean isClockwise = true;
 
     public UnoGameManager(UnoDeck deck) {
         this.deck = deck;
-        this.topCard = deck.drawCard(); 
+        this.topCard = deck.drawCard();
     }
 
     public UnoCard getTopCard() {
@@ -34,9 +35,12 @@ public class UnoGameManager {
     }
 
     public boolean isCardPlayable(UnoCard playedCard) {
-        return playedCard.getColor() == topCard.getColor() ||
-               playedCard.getValue() == topCard.getValue() ||
-               playedCard.getColor() == UnoCard.Color.BLACK;
+        if (playedCard == null || topCard == null) {
+            return false;
+        }
+        return playedCard.getColor() == topCard.getColor()
+                || playedCard.getValue() == topCard.getValue()
+                || playedCard.getColor() == UnoCard.Color.BLACK;
     }
 
     public UnoCard drawCard() {
@@ -47,38 +51,53 @@ public class UnoGameManager {
         return isClockwise;
     }
 
-    public void applyCardEffect(UnoCard cardPlayed, List<UnoPlayer> players, int currentIndex) {
+    public int applyCardEffect(UnoCard cardPlayed, List<UnoPlayer> players, int currentIndex) {
         switch (cardPlayed.getValue()) {
             case REVERSE:
                 isClockwise = !isClockwise;
                 System.out.println("Direction reversed!");
                 break;
+
             case SKIP:
                 System.out.println("Next player is skipped!");
-                break;
+                return 2;
+
             case DRAW_TWO:
-                int nextIndex = getNextPlayerIndex(players.size(), currentIndex);
-                UnoPlayer nextPlayer = players.get(nextIndex);
-//                nextPlayer.drawCard(deck.drawCard());
-//                nextPlayer.drawCard(deck.drawCard());
-                System.out.println(nextPlayer.getName() + " draws two cards!");
+                UnoPlayer next2 = players.get(getNextPlayerIndex(players.size(), currentIndex));
+                next2.addCardToHand(drawCard());
+                next2.addCardToHand(drawCard());
+                System.out.println(next2.getName() + " draws two cards!");
                 break;
-            case WILD:
-                // Color will be set manually by user or randomly in MVP
-                System.out.println("Wild card played!");
-                break;
+
             case WILD_DRAW_FOUR:
-                nextIndex = getNextPlayerIndex(players.size(), currentIndex);
-                nextPlayer = players.get(nextIndex);
-//                for (int i = 0; i < 4; i++) nextPlayer.drawCard(deck.drawCard());
-                System.out.println(nextPlayer.getName() + " draws four cards!");
+                UnoPlayer next4 = players.get(getNextPlayerIndex(players.size(), currentIndex));
+                for (int i = 0; i < 4; i++) {
+                    next4.addCardToHand(drawCard());
+                }
+                UnoCard.Color chosen4 = chooseRandomColor();
+                cardPlayed.setColor(chosen4);
+                System.out.println("Wild Draw Four! Color changed to: " + chosen4);
+                break;
+
+            case WILD:
+                UnoCard.Color chosen = chooseRandomColor();
+                cardPlayed.setColor(chosen);
+                System.out.println("Wild! Color changed to: " + chosen);
                 break;
         }
+        return 1;
+    }
+
+    private UnoCard.Color chooseRandomColor() {
+        UnoCard.Color[] colors = {
+            UnoCard.Color.RED, UnoCard.Color.BLUE, UnoCard.Color.GREEN, UnoCard.Color.YELLOW
+        };
+        return colors[(int) (Math.random() * colors.length)];
     }
 
     public int getNextPlayerIndex(int totalPlayers, int currentIndex) {
-        return isClockwise ?
-                (currentIndex + 1) % totalPlayers :
-                (currentIndex - 1 + totalPlayers) % totalPlayers;
+        return isClockwise
+                ? (currentIndex + 1) % totalPlayers
+                : (currentIndex - 1 + totalPlayers) % totalPlayers;
     }
 }
